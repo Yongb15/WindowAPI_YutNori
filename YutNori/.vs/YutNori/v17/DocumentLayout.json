@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\\uC708\uB3C4\uC6B0 API\uB85C \uB9CC\uB4E0\uAC83\\YutNoRi\\YutNori\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{6E632261-FCE9-4D35-967F-1D109D9F4A97}|YutNori\\YutNori.vcxproj|C:\\\uC708\uB3C4\uC6B0 API\uB85C \uB9CC\uB4E0\uAC83\\YutNoRi\\YutNori\\YutNori\\YutNori.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6E632261-FCE9-4D35-967F-1D109D9F4A97}|YutNori\\YutNori.vcxproj|solutionrelative:YutNori\\YutNori.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "YutNori.cpp",
+              "DocumentMoniker": "C:\\\uC708\uB3C4\uC6B0 API\uB85C \uB9CC\uB4E0\uAC83\\YutNoRi\\YutNori\\YutNori\\YutNori.cpp",
+              "RelativeDocumentMoniker": "YutNori\\YutNori.cpp",
+              "ToolTip": "C:\\\uC708\uB3C4\uC6B0 API\uB85C \uB9CC\uB4E0\uAC83\\YutNoRi\\YutNori\\YutNori\\YutNori.cpp",
+              "RelativeToolTip": "YutNori\\YutNori.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-18T00:21:09.073Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
