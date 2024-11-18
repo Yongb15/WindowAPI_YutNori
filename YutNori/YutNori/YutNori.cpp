@@ -1,19 +1,22 @@
 ﻿#include "YutNori.h"
 
-const int WINDOW_WIDTH = 1000;
-const int WINDOW_HEIGHT = 800;
-const int NORMAL_RADIUS = 15;
-const int CORNER_RADIUS = 25;
+const int WINDOW_WIDTH = 1000;              // 윈도우 창 넓이
+const int WINDOW_HEIGHT = 800;              // 윈도우 창 높이
+const int NORMAL_RADIUS = 15;               // 윷판 작은 점의 반지름
+const int CORNER_RADIUS = 25;               // 윷판 큰 점의 반지름
 
+// 비트맵(Bitmap) 객체를 나타내는 핸들
 HBITMAP hDoubleBufferBitmap = NULL;
+// 더블 버퍼링을 위한 백그라운드 장치 컨텍스트
 HDC hDoubleBufferDC = NULL;
 
 // 게임 보드 경로 정의
-const std::vector<int> MAIN_PATH = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 29 };
-const std::vector<int> PATH_FROM_5 = { 5, 20, 21, 22, 25, 26, 15, 16, 17, 18, 19, 0, 29 };
-const std::vector<int> PATH_FROM_10 = { 10, 23, 24, 22, 27, 28, 0, 29 };
-const std::vector<int> PATH_FROM_22 = { 22, 27, 28, 0, 29 };
+const std::vector<int> MAIN_PATH = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 29 };            // 바깥 경로
+const std::vector<int> PATH_FROM_5 = { 5, 20, 21, 22, 25, 26, 15, 16, 17, 18, 19, 0, 29 };                                  // 우측 상단 큰 원부터의 경로
+const std::vector<int> PATH_FROM_10 = { 10, 23, 24, 22, 27, 28, 0, 29 };                                                    // 좌측 상단 큰 원부터의 경로
+const std::vector<int> PATH_FROM_22 = { 22, 27, 28, 0, 29 };                                                                // 가운데 큰 원부터의 경로
 
+// 윷 던지기 결과를 나타내는 열거형
 enum class YutResult {
     DO,    // 도: 1칸 이동
     GAE,   // 개: 2칸 이동
@@ -22,46 +25,48 @@ enum class YutResult {
     MO     // 모: 5칸 이동
 };
 
-// 말의 위치를 나타내는 구조체
+// 말의 위치와 상태를 나타내는 구조체
 struct Piece {
-    int position;
-    bool isOnBoard;
-    bool isFinished;
-    const std::vector<int>* currentPath;
-    std::vector<Piece*> stackedPieces;
+    int position;                           // 말의 현재 위치
+    bool isOnBoard;                         // 말이 게임판 위에 존재하는지 확인
+    bool isFinished;                        // 말이 완주했는지 확인
+    const std::vector<int>* currentPath;    // 말이 이동할 현재 경로
+    std::vector<Piece*> stackedPieces;      // 말이 엎었을 경우
 
+    // 생성자 : 멤버 변수 초기화
     Piece() : position(0), isOnBoard(false), isFinished(false), currentPath(&MAIN_PATH) {}
 };
 
-// 게임 상태 구조체
+// 게임의 전체 상태를 나타내는 구조체
 struct GameState {
-    int currentPlayer;
-    std::vector<Piece> player1Pieces;
-    std::vector<Piece> player2Pieces;
-    YutResult currentYutResult;
-    int timeRemaining;
-    bool isFirstThrow;
-    bool canThrowAgain;
+    int currentPlayer;                      // 현재 차례
+    std::vector<Piece> player1Pieces;       // 플레이어 1의 말
+    std::vector<Piece> player2Pieces;       // 플레이어 2의 말
+    YutResult currentYutResult;             // 윷 던지기 결과
+    int remainingMinutes;
+    int remainingSeconds;
+    bool isFirstThrow;                      // 첫 번째 던지기
+    bool canThrowAgain;                     // 추가 턴
 };
 
-// 전역 변수
+// 게임 상태와 경로 점들의 좌표
 GameState gameState;
 std::vector<POINT> pathPoints(30);
 
-// 게임 초기화 함수
+// 게임 초기화
 GameState InitializeGame() {
     GameState state;
-    state.currentPlayer = 1;
-    state.player1Pieces = std::vector<Piece>(2);
-    state.player2Pieces = std::vector<Piece>(2);
-    state.currentYutResult = YutResult::DO;
-    state.timeRemaining = 600;  // 10분
-    state.isFirstThrow = true;
-    state.canThrowAgain = false;
+    state.currentPlayer = 1;                                            // 게임 시작시 플레이어 1부터 시작
+    state.player1Pieces = std::vector<Piece>(2);                        // 플레이어 1의 말 2개
+    state.player2Pieces = std::vector<Piece>(2);                        // 플레이어 2의 말 2개
+    state.remainingMinutes = 10;                                        // 10분으로 시작
+    state.remainingSeconds = 0;                                         // 0초로 시작
+    state.isFirstThrow = true;                                          // 첫 번째 윷 던지기
+    state.canThrowAgain = false;                                        // 게임 시작시 추가 턴 X
     return state;
 }
 
-// 윷 던지기 함수
+// 윷 던지기 / 랜덤으로 윷 결과 반환
 YutResult ThrowYut() {
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -75,7 +80,7 @@ YutResult ThrowYut() {
     return YutResult::DO;
 }
 
-// 말 이동 함수
+// 말 이동 / 주어진 말을 이동시키고 상대방 말을 잡았는지, 한 바퀴를 완주했는지 반환
 std::pair<bool, bool> MovePiece(Piece& piece, int steps, std::vector<Piece>& opponentPieces) {
     int currentIndex = 0;
     for (size_t i = 0; i < piece.currentPath->size(); ++i) {
@@ -145,12 +150,12 @@ std::pair<bool, bool> MovePiece(Piece& piece, int steps, std::vector<Piece>& opp
     return std::make_pair(capturedPiece, hasCompletedLap);
 }
 
+// 게임 보드 그리기
 void DrawBoard(HDC hdc)
 {
     // 배경색 설정 (연한 베이지색)
     HBRUSH hBackgroundBrush = CreateSolidBrush(RGB(245, 245, 220));
     RECT rcClient = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-    //GetClientRect(GetActiveWindow(), &rcClient);
     FillRect(hdc, &rcClient, hBackgroundBrush);
     DeleteObject(hBackgroundBrush);
 
@@ -249,6 +254,18 @@ void DrawBoard(HDC hdc)
     int panelTop = boardTop;
 
     // 폰트 설정
+    /*
+        CreateFont()의 인수
+        20: 폰트 높이 (픽셀 단위)
+        0, 0, 0: 폰트 너비, 기울기 각도, 방향 각도 (0은 기본값)
+        FW_NORMAL: 폰트 두께 (보통)
+        FALSE, FALSE, FALSE: 이탤릭체, 밑줄, 취소선 (모두 사용하지 않음)
+        HANGEUL_CHARSET: 한글 문자셋 사용
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY: 출력 정밀도, 클리핑 정밀도, 품질 (기본값 사용)
+        DEFAULT_PITCH | FF_DONTCARE: 기본 피치와 폰트 패밀리 (시스템이 선택)
+        L"맑은 고딕": 사용할 폰트 이름
+    */
+
     HFONT hFont = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         HANGEUL_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
         DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"맑은 고딕");
@@ -257,7 +274,7 @@ void DrawBoard(HDC hdc)
 
     // 남은 시간 표시
     wchar_t timeStr[50];
-    swprintf_s(timeStr, L"남은 시간: %d초", gameState.timeRemaining);
+    swprintf_s(timeStr, L"남은 시간: %02d:%02d", gameState.remainingMinutes, gameState.remainingSeconds);
     TextOut(hdc, panelLeft, panelTop, timeStr, wcslen(timeStr));
 
     // 현재 차례 표시
@@ -309,45 +326,49 @@ void DrawBoard(HDC hdc)
     for (const auto& piece : gameState.player1Pieces) {
         if (piece.isOnBoard) {
             SelectObject(hdc, hYellowBrush);
-            int offset = piece.stackedPieces.empty() ? 0 : 5;  // 스택된 말이 있을 경우에만 오프셋 적용
-            Ellipse(hdc,
-                pathPoints[piece.position].x - NORMAL_RADIUS + offset,
-                pathPoints[piece.position].y - NORMAL_RADIUS + offset,
-                pathPoints[piece.position].x + NORMAL_RADIUS + offset,
-                pathPoints[piece.position].y + NORMAL_RADIUS + offset);
 
-            // 말 번호 표시
+            // 스택된 말 그리기
+            int stackSize = piece.stackedPieces.size() + 1;
+            for (int i = 0; i < stackSize; ++i) {
+                int offset = i * 3;  // 각 스택된 말마다 2픽셀씩 이동
+
+                Ellipse(hdc,
+                    pathPoints[piece.position].x - NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].y - NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].x + NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].y + NORMAL_RADIUS + offset);
+            }
+
+            // 말 번호 표시 (가장 위에 있는 말의 번호만 표시)
             wchar_t numberStr[2];
             swprintf_s(numberStr, L"%d", &piece - &gameState.player1Pieces[0] + 1);
             SetTextColor(hdc, RGB(0, 0, 0));  // 검은색 텍스트
-            TextOut(hdc, pathPoints[piece.position].x - 5 + offset, pathPoints[piece.position].y - 8 + offset, numberStr, 1);
-
-            // 스택된 말 표시
-            if (!piece.stackedPieces.empty()) {
-                TextOut(hdc, pathPoints[piece.position].x + 5 + offset, pathPoints[piece.position].y - 8 + offset, L"+", 1);
-            }
+            int topOffset = (stackSize - 1) * 2;
+            TextOut(hdc, pathPoints[piece.position].x - 5 + topOffset, pathPoints[piece.position].y - 8 + topOffset, numberStr, 1);
         }
     }
     for (const auto& piece : gameState.player2Pieces) {
         if (piece.isOnBoard) {
             SelectObject(hdc, hGreenBrush);
-            int offset = piece.stackedPieces.empty() ? 0 : 5;  // 스택된 말이 있을 경우에만 오프셋 적용
-            Ellipse(hdc,
-                pathPoints[piece.position].x - NORMAL_RADIUS + offset,
-                pathPoints[piece.position].y - NORMAL_RADIUS + offset,
-                pathPoints[piece.position].x + NORMAL_RADIUS + offset,
-                pathPoints[piece.position].y + NORMAL_RADIUS + offset);
 
-            // 말 번호 표시
+            // 스택된 말 그리기
+            int stackSize = piece.stackedPieces.size() + 1;
+            for (int i = 0; i < stackSize; ++i) {
+                int offset = i * 2;  // 각 스택된 말마다 2픽셀씩 이동
+                
+                Ellipse(hdc,
+                    pathPoints[piece.position].x - NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].y - NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].x + NORMAL_RADIUS + offset,
+                    pathPoints[piece.position].y + NORMAL_RADIUS + offset);
+            }
+
+            // 말 번호 표시 (가장 위에 있는 말의 번호만 표시)
             wchar_t numberStr[2];
             swprintf_s(numberStr, L"%d", &piece - &gameState.player2Pieces[0] + 1);
             SetTextColor(hdc, RGB(0, 0, 0));  // 검은색 텍스트
-            TextOut(hdc, pathPoints[piece.position].x - 5 + offset, pathPoints[piece.position].y - 8 + offset, numberStr, 1);
-
-            // 스택된 말 표시
-            if (!piece.stackedPieces.empty()) {
-                TextOut(hdc, pathPoints[piece.position].x + 5 + offset, pathPoints[piece.position].y - 8 + offset, L"+", 1);
-            }
+            int topOffset = (stackSize - 1) * 2;
+            TextOut(hdc, pathPoints[piece.position].x - 5 + topOffset, pathPoints[piece.position].y - 8 + topOffset, numberStr, 1);
         }
     }
 
@@ -448,6 +469,7 @@ void DrawBoard(HDC hdc)
     DeleteObject(hPen);
 }
 
+// 클릭 처리 / 던지기 버튼 클릭 및 말 이동 처리
 void HandleClick(HWND hWnd, int x, int y, GameState& state)
 {
     // 게임 보드 영역 계산
@@ -710,13 +732,17 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     case WM_TIMER:
         if (wParam == 1) {  // Timer ID
-            gameState.timeRemaining--;
-            if (gameState.timeRemaining <= 0) {
+            gameState.remainingSeconds--;
+            if (gameState.remainingSeconds < 0) {
+                gameState.remainingMinutes--;
+                gameState.remainingSeconds = 59;
+            }
+            if (gameState.remainingMinutes < 0) {
                 KillTimer(hWnd, 1);
                 MessageBox(hWnd, L"시간 초과!", L"게임 종료", MB_OK);
                 gameState = InitializeGame();  // 게임 재시작
             }
-            InvalidateRect(hWnd, NULL, FALSE);  // FALSE로 변경
+            InvalidateRect(hWnd, NULL, FALSE);
         }
         return 0;
     }
