@@ -15,10 +15,19 @@
   </p>
 </div><hr>
 <div>
-  <p>제작과정</p>
+  <p>제작과정
+  어렸을 때 명절마다 가족끼리 모여서 같이한 윷놀이를 만들어보고 싶었다.
+  되게 간단할 줄 알았는데 판만드는 것부터 게임 진행을 위한 알고리즘을 만드는 것도 어려웠다.
+  </p>
 </div>
 <div>
   <h4>실행시 화면</h4>
   <img alt="게임 실행 화면" src="https://github.com/user-attachments/assets/ce459552-476e-4de5-ba51-67bd909245b5">
 </div><hr>
+<div>
+  <p>사용한 언어</p>
+  <ul>
+    <li>Window API, C/C++</li>
+  </ul>
+</div>
 
