@@ -2,5 +2,5 @@
 
 <h1>실행시 화면</h1>
 <div>
-  ![멋진 게임 보드](https://example.com/game-board.jpg
+  ![Image](https://github.com/user-attachments/assets/4c4d259b-3de8-49d9-bcff-6313f0af5109)
 </div>
